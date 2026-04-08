@@ -8,6 +8,14 @@ from models import SQLAction, SQLObservation
 app = create_fastapi_app(SQLEnvironment, action_cls=SQLAction, observation_cls=SQLObservation)
 
 
+@app.get("/")
+def read_root():
+    return {
+        "status": "ok", 
+        "name": "sql_query_env",
+        "description": "OpenEnv environment for SQL Query generation task"
+    }
+
 @app.get("/tasks")
 def list_tasks():
     env = SQLEnvironment()
