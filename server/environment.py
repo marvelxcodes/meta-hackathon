@@ -296,7 +296,7 @@ class SQLEnvironment(Environment):
         if not query:
             return SQLObservation(
                 done=True,
-                reward=0.0,
+                reward=0.01,
                 task_id=task["id"],
                 question=task["question"],
                 schema_description=SCHEMA_DESCRIPTION,
@@ -310,7 +310,7 @@ class SQLEnvironment(Environment):
         if error:
             return SQLObservation(
                 done=True,
-                reward=0.0,
+                reward=0.01,
                 task_id=task["id"],
                 question=task["question"],
                 schema_description=SCHEMA_DESCRIPTION,
@@ -322,6 +322,9 @@ class SQLEnvironment(Environment):
             )
 
         reward = _grade(task, rows)
+        
+        # Clamp reward to be strictly between 0 and 1 (not 0.0 and not 1.0)
+        reward = max(0.01, min(0.99, float(reward)))
 
         return SQLObservation(
             done=True,

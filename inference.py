@@ -102,7 +102,7 @@ def main():
         
         print(f"[STEP] step=1 action={action_str} reward={reward_str} done={done_str} error={error_str}")
         
-        success_str = "true" if reward == 1.0 else "false"
+        success_str = "true" if reward >= 0.99 else "false"
         print(f"[END] success={success_str} steps=1 score={reward_str} rewards={reward_str}")
 
         total_reward += reward
