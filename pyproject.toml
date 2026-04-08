@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "sql-query-env"
+version = "0.1.0"
+description = "An OpenEnv environment for training AI agents to write SQL queries against relational databases"
+requires-python = ">=3.10"
+dependencies = [
+    "openenv-core",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+server = "server.app:main"
