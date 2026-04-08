@@ -13,7 +13,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN", "")
 ENV_URL = os.environ.get("ENV_URL", "http://localhost:8000")
 
 client = OpenAI(
-    base_url=API_BASE_URL, 
+    base_url=API_BASE_URL,
     api_key=HF_TOKEN,
     timeout=300.0,
     max_retries=1
@@ -28,6 +28,24 @@ Rules:
 - For ranking, use window functions like DENSE_RANK() when asked for dense ranking.
 - Always match the requested column order and sort order exactly.
 """
+
+
+def clamp(score: float) -> float:
+    return max(0.01, min(0.99, score))
+
+
+def log_start(task, env, model):
+    print(f"[START] task={task} env={env} model={model}", flush=True)
+
+
+def log_step(step, action, reward, done, error=None):
+    error_str = f'"{error}"' if error else "null"
+    print(f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error={error_str}", flush=True)
+
+
+def log_end(success, steps, score, rewards):
+    rewards_str = ",".join([f"{r:.2f}" for r in rewards])
+    print(f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}", flush=True)
 
 
 def call_llm(question: str, schema: str) -> str:
@@ -78,11 +96,11 @@ def main():
     total_reward = 0.0
     results = []
 
-    for i, task in enumerate(tasks):
+    for task in tasks:
         task_id = task["id"]
         difficulty = task["difficulty"]
 
-        print(f"[START] task={task_id} env=sql_query_env model={MODEL_NAME}")
+        log_start(task_id, "sql_query_env", MODEL_NAME)
 
         obs = reset_env(task_id)
         question = obs.get("question", obs.get("observation", {}).get("question", ""))
@@ -93,40 +111,32 @@ def main():
         llm_time = time.time() - t0
 
         result = step_env(sql_query)
-        
-        # Handle OpenEnv format wrapper
+
         obs_data = result.get("observation", result)
-        
-        reward = obs_data.get("reward", 0.0)
+
+        reward = obs_data.get("reward", 0.01)
         if reward is None:
-            reward = 0.0
-            
-        reward_str = f"{reward:.2f}"
-        
+            reward = 0.01
+        reward = clamp(float(reward))
+
         done = obs_data.get("done", True)
-        done_str = "true" if done else "false"
-        
         error = obs_data.get("error", None)
-        error_str = repr(error) if error else "null"
-        
-        action_str = repr(sql_query)
-        
-        print(f"[STEP] step=1 action={action_str} reward={reward_str} done={done_str} error={error_str}")
-        
-        success_str = "true" if reward >= 0.99 else "false"
-        print(f"[END] success={success_str} steps=1 score={reward_str} rewards={reward_str}")
+
+        log_step(1, repr(sql_query), reward, done, error)
+
+        success = reward >= 0.99
+        log_end(success=success, steps=1, score=reward, rewards=[reward])
 
         total_reward += reward
 
-        step_info = {
+        results.append({
             "task_id": task_id,
             "difficulty": difficulty,
             "question": question,
             "generated_query": sql_query,
             "reward": reward,
             "llm_time_s": round(llm_time, 2),
-        }
-        results.append(step_info)
+        })
 
     avg_reward = total_reward / len(tasks) if tasks else 0
 

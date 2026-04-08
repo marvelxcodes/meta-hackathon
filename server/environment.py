@@ -218,28 +218,32 @@ def _execute_query(conn: sqlite3.Connection, query: str) -> tuple:
         return None, str(e)
 
 
+def _clamp(score: float) -> float:
+    return max(0.01, min(0.99, score))
+
+
 def _grade(task: dict, rows) -> float:
     if rows is None:
-        return 0.0
+        return 0.01
     try:
         if task["validate"](rows):
-            return 1.0
+            return 0.99
     except Exception:
         pass
 
     expected_str = task["expected_result"]
     actual_str = str(rows)
     if actual_str.strip() == expected_str.strip():
-        return 1.0
+        return 0.99
 
     if len(rows) == 0:
-        return 0.0
+        return 0.01
 
     try:
         expected_rows = eval(expected_str)
         if len(rows) == len(expected_rows):
             matching = sum(1 for a, b in zip(rows, expected_rows) if a == b)
-            return round(matching / len(expected_rows), 2)
+            return _clamp(round(matching / len(expected_rows), 2))
         elif len(rows) > 0:
             return 0.2
     except Exception:
@@ -323,8 +327,7 @@ class SQLEnvironment(Environment):
 
         reward = _grade(task, rows)
         
-        # Clamp reward to be strictly between 0 and 1 (not 0.0 and not 1.0)
-        reward = max(0.01, min(0.99, float(reward)))
+        reward = _clamp(float(reward))
 
         return SQLObservation(
             done=True,
