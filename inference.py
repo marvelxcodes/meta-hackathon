@@ -5,12 +5,19 @@ import time
 import requests
 from openai import OpenAI
 
+GLOBAL_START = time.time()
+
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 ENV_URL = os.environ.get("ENV_URL", "http://localhost:8000")
 
-client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+client = OpenAI(
+    base_url=API_BASE_URL, 
+    api_key=HF_TOKEN,
+    timeout=300.0,
+    max_retries=1
+)
 
 SYSTEM_PROMPT = """You are an expert SQL analyst. Given a database schema and a question, write a single SQL query that answers the question.
 
@@ -24,6 +31,10 @@ Rules:
 
 
 def call_llm(question: str, schema: str) -> str:
+    if time.time() - GLOBAL_START > 280:
+        print("Global timeout approached (280s), skipping LLM call.", file=sys.stderr)
+        return "SELECT 1"
+
     user_prompt = f"{SYSTEM_PROMPT}\n\nSchema:\n{schema}\n\nQuestion: {question}\n\nSQL Query:"
     try:
         response = client.chat.completions.create(
