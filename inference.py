@@ -24,22 +24,27 @@ Rules:
 
 
 def call_llm(question: str, schema: str) -> str:
-    user_prompt = f"Schema:\n{schema}\n\nQuestion: {question}\n\nSQL Query:"
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.0,
-        max_tokens=512,
-    )
-    raw = response.choices[0].message.content.strip()
-    if raw.startswith("```"):
-        lines = raw.split("\n")
-        lines = [l for l in lines if not l.startswith("```")]
-        raw = "\n".join(lines).strip()
-    return raw
+    user_prompt = f"{SYSTEM_PROMPT}\n\nSchema:\n{schema}\n\nQuestion: {question}\n\nSQL Query:"
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.01,
+            max_tokens=512,
+        )
+        raw = response.choices[0].message.content.strip()
+        if raw.startswith("```"):
+            lines = raw.split("\n")
+            lines = [l for l in lines if not l.startswith("```")]
+            raw = "\n".join(lines).strip()
+        return raw
+    except Exception as e:
+        import traceback
+        print(f"LLM Call Failed: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return "SELECT 1"
 
 
 def reset_env(task_id: str) -> dict:
