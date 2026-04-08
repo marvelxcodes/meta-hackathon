@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 WORKDIR /app
-ENV CACHE_BUSTER=2
+ENV CACHE_BUSTER=3
 
 COPY server/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
