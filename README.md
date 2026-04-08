@@ -1,3 +1,11 @@
+---
+title: OpenEnv SQL Query
+emoji: 📊
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
 # SQL Query Environment
 
 An OpenEnv environment that trains AI agents to write correct SQL queries against a relational database. The agent receives a database schema and a natural language question, then must produce a SQL query that returns the expected result.
